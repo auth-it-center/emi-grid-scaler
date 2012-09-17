@@ -28,6 +28,7 @@ class OpenstackHandler
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
+                                        :security_groups => ['default', 'Torque-WN']
                                         :is_debug => @@debug_openstack}) 
     end
   end
