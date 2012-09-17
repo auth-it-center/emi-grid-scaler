@@ -2,7 +2,6 @@ require 'rubygems'
 require 'openstack'
 require 'retryable'
 
-
 class OpenstackHandler
   @@debug = false
   @@debug_openstack = false
