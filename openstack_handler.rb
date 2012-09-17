@@ -69,7 +69,7 @@ class OpenstackHandler
     
     # Add new vms to cream files.
     CreamHandler.write_to_hosts(ip_name_fqdn_array)
-    fqdns = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn.last}
+    fqdns = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn[1]}
     CreamHandler.add_wns_to_wn_list(fqdns)
     
     # Restart cream services.
