@@ -8,6 +8,10 @@ class CreamHandler
   
   @@wn_list_conf = '/opt/glite/yaim/etc/siteinfo/wn-list.conf'
   
+  def self.debug=(debug)
+    @@debug = debug
+  end
+  
   def self.queue_stats
     stats = {}
     showq_cmd = ""
@@ -86,6 +90,7 @@ class CreamHandler
   end
   
   def self.restart_yaim!
+    p "Restarting YAIM!" if @@debug
     %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
     
     $?.exitstatus

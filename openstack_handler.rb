@@ -4,6 +4,8 @@ require 'retryable'
 
 
 class OpenstackHandler
+  @@debug = false
+  @@debug_openstack = false
   
   @@counter = 0
   
@@ -12,12 +14,21 @@ class OpenstackHandler
 
   @@allservers = []
   
+  def self.debug=(debug)
+    @@debug = debug
+  end
+  
+  def self.debug_openstack=(debug)
+    @@debug_openstack = debug
+  end
+  
   def self.init_client
     retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
       os = OpenStack::Connection.create({:username => "cream", 
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
-                                        :authtenant_name =>"scc-61"}) # :is_debug => true
+                                        :authtenant_name =>"scc-61",
+                                        :is_debug => @@debug_openstack}) 
     end
   end
   
@@ -30,12 +41,18 @@ class OpenstackHandler
         newservers << os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id)
       end
       
+      p "Counter = " + @@counter if @@debug
+      
       @@counter+=1
       sleep(1)
     end
     
+    p newservers.collect {|n_s| n_s.name} if @@debug
+    
     # Check if all servers are online and get IP addresses + name + fqdn in an array.
     # e.g. [[10.0.0.1, vm-00, vm-00.grid.auth.gr], [10.0.0.2, vm-01, vm-01.grid.auth.gr], ...]
+    p "ip_name_fqdn_array is :" if @@debug
+    p ip_name_fqdn_array if @@debug
     ip_name_fqdn_array = vms_ips(newservers)
     
     # Check if yaim is finished to all vms.
@@ -52,6 +69,11 @@ class OpenstackHandler
   end
   
   def self.delete_vms(n)
+    # Delete n servers.
+    
+    # Delete vms from cream files.
+    
+    # Restart cream services.
   end
   
   def self.counter
