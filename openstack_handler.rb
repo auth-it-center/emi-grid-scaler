@@ -30,8 +30,6 @@ class OpenstackHandler
                                         :authtenant_name =>"scc-61",
                                         :is_debug => @@debug_openstack}) 
     end
-    
-    inspect @@os if @@debug
   end
   
   def self.create_vms(n)
