@@ -128,7 +128,7 @@ class OpenstackHandler
     
     # Get all ip addresses.
     vms.each do |vm|
-      ip_addresses << [vm.addresses.first.address, vm.name, vm.name + ".grid.auth.gr"]
+      ip_addresses << [vm.addresses.first.address, vm.name + ".grid.auth.gr", vm.name]
     end
     
     return ip_addresses

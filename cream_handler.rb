@@ -65,7 +65,7 @@ class CreamHandler
     etc_hosts_file = File.open(@@etc_hosts_file_path, 'a')
 
     list.each do |ip_name_fqdn|
-      etc_hosts_file.write ip_name_fqdn.join(' ') + '\n'
+      etc_hosts_file.write "#{ip_name_fqdn.join(' ')}\n"
     end
     
     p "Printing /etc/hosts new file" if @@debug
@@ -80,7 +80,7 @@ class CreamHandler
     
     etc_hosts_lines.reject! {|line| list.include?(line.split.first) }
     
-     File.open(@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines.join('\n') }
+     File.open(@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines.join("\n") }
   end
   
   def self.add_wns_to_wn_list(list)
