@@ -13,6 +13,7 @@ OpenstackHandler.debug = true
 OpenstackHandler.debug_openstack = false
 CreamHandler.debug = true
 VMHandler.debug = true
+CreamHandler.local = false
 
 p "Initialazing openstack client."
 
@@ -25,7 +26,7 @@ while true
   p stats
   p "===================================="
 
-  if stats[:idle_jobs] > stats[:total_processors]
+  if true #stats[:idle_jobs] > stats[:total_processors]
     # Increase VMs.
     p "We need to scale!"
     OpenstackHandler.create_vms(INCREASE_VM_CONSTANT)
@@ -34,5 +35,9 @@ while true
   end
   
   p "Lets wait for 1 min."
-  sleep(60) # 10 min
+  sleep(60) # 1 min
+  
+  stats = CreamHandler.queue_stats
+  p stats
+  
 end

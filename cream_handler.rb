@@ -27,9 +27,9 @@ class CreamHandler
     if @@local
       showq_cmd = %x[showq]
     else
-      # Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
-      #   showq_cmd = session.exec!('showq')
-      # end
+      Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
+        showq_cmd = session.exec!('showq')
+      end
     end
 
     stats[:total_jobs], stats[:active_jobs], stats[:idle_jobs], stats[:blocked_jobs] = showq_cmd.match(/^Total Jobs: (\d+)   Active Jobs: (\d+)   Idle Jobs: (\d+)   Blocked Jobs: (\d+)$/).captures
@@ -106,7 +106,19 @@ class CreamHandler
   
   def self.restart_yaim!
     p "Restarting YAIM!" if @@debug
-    %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
+    
+    if @@local
+      %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
+    else
+      yaim_cmd = ""
+
+      Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
+        yaim_cmd = session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site')
+      end
+      
+      p "YAIM command:" if @@debug
+      p yaim_cmd if @@debug
+    end
     
     $?.exitstatus
   end  

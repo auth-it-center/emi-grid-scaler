@@ -29,6 +29,7 @@ class OpenstackHandler
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
                                         :security_groups => ['default', 'Torque-WN'],
+                                        :key_name=>"ansible",
                                         :is_debug => @@debug_openstack}) 
     end
   end
@@ -98,6 +99,7 @@ class OpenstackHandler
     
     while flag
       # Server refreshing
+      p "Server refreshing" if @@debug
       vms.each do |server| 
         retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
           server.refresh
@@ -111,7 +113,14 @@ class OpenstackHandler
           i+=1
         end
       end
-            
+      
+      if @@debug
+        p "Number of active vms:"
+        p i
+        p "Number of vms:"
+        p vms.count
+      end
+      
       if i == vms.count
         flag = false
       end

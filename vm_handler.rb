@@ -19,7 +19,9 @@ class VMHandler
       host_finished = 0
       
       ip_addresses.each do |ip_address|
-        host_finished += yaim_terminated?(ip_address)
+        retryable(:tries => 3, :sleep => 5, :on => Errno::ECONNREFUSED) do
+          host_finished += yaim_terminated?(ip_address)
+        end
       end
       
       p "Number if finished hosts is:" if @@debug
@@ -32,7 +34,7 @@ class VMHandler
   def self.yaim_terminated?(ip_address)
     last_line = ""
     
-    Net::SSH.start( ip_address, 'ansible' ) do |session|
+    Net::SSH.start( ip_address, 'root', :paranoid => false ) do |session|
       last_line = session.exec!('tail -n1 /opt/glite/yaim/log/yaimlog')
     end
     
