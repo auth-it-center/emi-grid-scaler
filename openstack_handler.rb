@@ -59,9 +59,10 @@ class OpenstackHandler
     
     # Check if all servers are online and get IP addresses + name + fqdn in an array.
     # e.g. [[10.0.0.1, vm-00, vm-00.grid.auth.gr], [10.0.0.2, vm-01, vm-01.grid.auth.gr], ...]
+    ip_name_fqdn_array = vms_ips(newservers)
+
     p "ip_name_fqdn_array is :" if @@debug
     p ip_name_fqdn_array if @@debug
-    ip_name_fqdn_array = vms_ips(newservers)
     
     # Check if yaim is finished to all vms.
     ip_addresses = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn.first}
