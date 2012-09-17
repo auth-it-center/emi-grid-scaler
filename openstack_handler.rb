@@ -29,6 +29,8 @@ class OpenstackHandler
                                         :authtenant_name =>"scc-61",
                                         :is_debug => @@debug_openstack}) 
     end
+    
+    inspect os if @@debug
   end
   
   def self.create_vms(n)
@@ -55,12 +57,12 @@ class OpenstackHandler
     ip_name_fqdn_array = vms_ips(newservers)
     
     # Check if yaim is finished to all vms.
-    ip_addresses = ip_name_fqdn_array.collect = {|ip_name_fqdn| ip_name_fqdn.first}
+    ip_addresses = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn.first}
     VMHandler.yaim_terminated_in_each_host?(ip_addresses)
     
     # Add new vms to cream files.
     CreamHandler.write_to_hosts(ip_name_fqdn_array)
-    fqdns = ip_name_fqdn_array.collect = {|ip_name_fqdn| ip_name_fqdn.last}
+    fqdns = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn.last}
     CreamHandler.add_wns_to_wn_list(fqdns)
     
     # Restart cream services.
