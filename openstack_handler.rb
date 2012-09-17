@@ -11,6 +11,7 @@ class OpenstackHandler
   @@flavor_id = 2
   @@image_id = 50
 
+  @@os = nil
   @@allservers = []
   
   def self.debug=(debug)
@@ -23,14 +24,14 @@ class OpenstackHandler
   
   def self.init_client
     retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-      os = OpenStack::Connection.create({:username => "cream", 
+      @@os = OpenStack::Connection.create({:username => "cream", 
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
                                         :is_debug => @@debug_openstack}) 
     end
     
-    inspect os if @@debug
+    inspect @@os if @@debug
   end
   
   def self.create_vms(n)
@@ -39,7 +40,7 @@ class OpenstackHandler
     
     n.times do |counter|
       retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-        newservers << os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id)
+        newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id)
       end
       
       p "Counter = " + @@counter if @@debug
