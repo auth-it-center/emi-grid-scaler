@@ -28,8 +28,6 @@ class OpenstackHandler
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
-                                        :security_groups => ['default', 'Torque-WN'],
-                                        :key_name=>"ansible",
                                         :is_debug => @@debug_openstack}) 
     end
   end
@@ -41,7 +39,7 @@ class OpenstackHandler
     begin
       n.times do |counter|
         retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id)
+          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id, :security_groups => ['default', 'Torque-WN'], :key_name=>"test_key_set")
         end
 
         p "Counter = " + @@counter.to_s if @@debug
