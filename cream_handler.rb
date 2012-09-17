@@ -16,11 +16,12 @@ class CreamHandler
     stats = {}
     showq_cmd = ""
     
-    # showq_cmd = %x[showq]
-    # showq_cmd = %x[ssh ansible@cream.afroditi.hellasgrid.gr showq]
-    
-    Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
-      showq_cmd = session.exec!('showq')
+    if local
+      showq_cmd = %x[showq]
+    else
+      # Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
+      #   showq_cmd = session.exec!('showq')
+      # end
     end
 
     stats[:total_jobs], stats[:active_jobs], stats[:idle_jobs], stats[:blocked_jobs] = showq_cmd.match(/^Total Jobs: (\d+)   Active Jobs: (\d+)   Idle Jobs: (\d+)   Blocked Jobs: (\d+)$/).captures
@@ -35,13 +36,13 @@ class CreamHandler
       p "               Information from cream.                "
       p "======================================================"
       p "working_nodes, total_nodes"
-      p "#{stats[:working_nodes]}, \t #{stats[:total_nodes]}"
+      print "#{stats[:working_nodes]}, \t #{stats[:total_nodes]}"
       p "==="
       p "working_processors, total_processors"
-      p "#{stats[:working_processors]}, \t #{stats[:total_processors]}"
+      print "#{stats[:working_processors]}, \t #{stats[:total_processors]}"
       p "==="
       p "total_jobs, active_jobs, idle_jobs, blocked_jobs"
-      p "#{stats[:total_jobs]}, \t #{stats[:active_jobs]}, \t #{stats[:idle_jobs]}, \t #{stats[:blocked_jobs]}"
+      print "#{stats[:total_jobs]}, \t #{stats[:active_jobs]}, \t #{stats[:idle_jobs]}, \t #{stats[:blocked_jobs]}"
       p "======================================================"
       p "======================================================"
       p "======================================================"
