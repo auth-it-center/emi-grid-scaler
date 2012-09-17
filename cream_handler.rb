@@ -7,7 +7,7 @@ class CreamHandler
   
   @@etc_hosts_file_path = '/etc/hosts'
   
-  @@wn_list_conf = '/opt/glite/yaim/etc/siteinfo/wn-list.conf'
+  @@wn_list_conf_path = '/opt/glite/yaim/etc/siteinfo/wn-list.conf'
   
   def self.debug=(debug)
     @@debug = debug
@@ -69,7 +69,7 @@ class CreamHandler
     end
     
     p "Printing /etc/hosts new file" if @@debug
-    p etc_hosts_file if @@debug
+    p File.readlines(@@etc_hosts_file_path) if @@debug
     
     etc_hosts_file.close
   end
@@ -80,29 +80,29 @@ class CreamHandler
     
     etc_hosts_lines.reject! {|line| list.include?(line.split.first) }
     
-     File.open(@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines.join("\n") }
+    File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines.join("\n") }
   end
   
   def self.add_wns_to_wn_list(list)
     
-    wn_list_conf_file = File.open(@@wn_list_conf, 'a')
+    wn_list_conf_file = File.open(@@wn_list_conf_path, 'a')
 
     list.each do |fqdn|
-      wn_list_conf_file.write fqdn + '\n'
+      wn_list_conf_file.write "#{fqdn}\n"
     end
     
     p "Printing wn-list.conf new file" if @@debug
-    p wn_list_conf_file if @@debug
+    p File.readlines(@@wn_list_conf_path) if @@debug
     
     wn_list_conf_file.close
   end
   
   def self.delete_wns_from_wn_list(list)
-    wn_list_conf_lines = File.readlines(@@wn_list_conf)
+    wn_list_conf_lines = File.readlines(@@wn_list_conf_path)
     
     wn_list_conf_lines.reject! {|line| list.include? line.strip! }
     
-    File.open(@etc_hosts_file_path, 'w') {|f| f.write wn_list_conf_lines.join('\n') }
+    File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines.join("\n") }
   end
   
   def self.restart_yaim!
