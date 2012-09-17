@@ -36,17 +36,24 @@ class OpenstackHandler
     # Create n new servers.
     newservers = []
     
-    n.times do |counter|
-      retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-        newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id)
+    begin
+      n.times do |counter|
+        retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
+          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id)
+        end
+
+        p "Counter = " + @@counter.to_s if @@debug
+
+        @@counter+=1
+        sleep(1)
       end
-      
-      p "Counter = " + @@counter if @@debug
-      
-      @@counter+=1
-      sleep(1)
+    rescue OpenStack::Exception::OverLimit
+      p "InstanceLimitExceeded: Instance quota exceeded. You cannot run any more instances of this type."
     end
     
+    
+    p "Printing new servers:" if @@debug
+    p newservers if @@debug
     p newservers.collect {|n_s| n_s.name} if @@debug
     
     # Check if all servers are online and get IP addresses + name + fqdn in an array.

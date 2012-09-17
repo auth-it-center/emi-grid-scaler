@@ -3,7 +3,7 @@ require 'rubygems'
 require 'cream_handler'
 require 'openstack_handler'
 
-INCREASE_VM_CONSTANT = 10
+INCREASE_VM_CONSTANT = 3
 
 p "Welcome to Openstack Scaler."
 
@@ -11,6 +11,7 @@ p "Welcome to Openstack Scaler."
 OpenstackHandler.debug = true
 OpenstackHandler.debug_openstack = false
 CreamHandler.debug = true
+VMHandler.debug = true
 
 p "Initialazing openstack client."
 

@@ -1,8 +1,18 @@
 require 'net/ssh'
 
 class VMHandler
+
+  @@debug = false
+  
+  def self.debug=(debug)
+    @@debug = debug
+  end
   
   def self.yaim_terminated_in_each_host?(ip_addresses)
+    
+    p "Checking if YAIM is terminated in:" if @@debug
+    p ip_addresses if @@debug
+
     host_finished = 0
     
     while host_finished < ip_addresses.count
@@ -11,6 +21,9 @@ class VMHandler
       ip_addresses.each do |ip_address|
         host_finished += yaim_terminated?(ip_address)
       end
+      
+      p "Number if finished hosts is:" if @@debug
+      p host_finished if @@debug
       
       sleep(5)
     end
@@ -22,6 +35,9 @@ class VMHandler
     Net::SSH.start( ip_address, 'ansible' ) do |session|
       last_line = session.exec!('tail -n1 /opt/glite/yaim/log/yaimlog')
     end
+    
+    p "Last line in #{ip_address} is:" if @@debug
+    p last_line if @@debug
     
     # last_line = %x[ssh ansible@#{ip_address} tail -n1 /opt/glite/yaim/log/yaimlog]
     
