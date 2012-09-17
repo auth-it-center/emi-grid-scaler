@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'cream_handler'
 require 'openstack_handler'
+require 'vm_handler'
 
 INCREASE_VM_CONSTANT = 3
 
