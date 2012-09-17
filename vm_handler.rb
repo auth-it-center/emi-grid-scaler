@@ -24,7 +24,7 @@ class VMHandler
         end
       end
       
-      p "Number if finished hosts is:" if @@debug
+      p "Number of finished hosts is:" if @@debug
       p host_finished if @@debug
       
       sleep(5)

@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'net/ssh'
 
 class CreamHandler
@@ -61,7 +62,7 @@ class CreamHandler
   
   def self.write_to_hosts(list)
 
-    etc_hosts_file = File.open(@etc_hosts_file_path, 'a')
+    etc_hosts_file = File.open(@@etc_hosts_file_path, 'a')
 
     list.each do |ip_name_fqdn|
       etc_hosts_file.write ip_name_fqdn.join(' ') + '\n'
@@ -75,7 +76,7 @@ class CreamHandler
   
   def self.delete_from_hosts(list)
         
-    etc_hosts_lines = File.readlines(@etc_hosts_file_path)
+    etc_hosts_lines = File.readlines(@@etc_hosts_file_path)
     
     etc_hosts_lines.reject! {|line| list.include?(line.split.first) }
     
@@ -84,7 +85,7 @@ class CreamHandler
   
   def self.add_wns_to_wn_list(list)
     
-    wn_list_conf_file = File.open(@wn_list_conf, 'a')
+    wn_list_conf_file = File.open(@@wn_list_conf, 'a')
 
     list.each do |fqdn|
       wn_list_conf_file.write fqdn + '\n'
@@ -97,7 +98,7 @@ class CreamHandler
   end
   
   def self.delete_wns_from_wn_list(list)
-    wn_list_conf_lines = File.readlines(@wn_list_conf)
+    wn_list_conf_lines = File.readlines(@@wn_list_conf)
     
     wn_list_conf_lines.reject! {|line| list.include? line.strip! }
     
