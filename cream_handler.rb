@@ -67,6 +67,9 @@ class CreamHandler
       etc_hosts_file.write ip_name_fqdn.join(' ') + '\n'
     end
     
+    p "Printing /etc/hosts new file" if @@debug
+    p etc_hosts_file if @@debug
+    
     etc_hosts_file.close
   end
   
@@ -87,6 +90,9 @@ class CreamHandler
       wn_list_conf_file.write fqdn + '\n'
     end
     
+    p "Printing wn-list.conf new file" if @@debug
+    p wn_list_conf_file if @@debug
+    
     wn_list_conf_file.close
   end
   
@@ -95,7 +101,7 @@ class CreamHandler
     
     wn_list_conf_lines.reject! {|line| list.include? line.strip! }
     
-     File.open(@etc_hosts_file_path, 'w') {|f| f.write wn_list_conf_lines.join('\n') }
+    File.open(@etc_hosts_file_path, 'w') {|f| f.write wn_list_conf_lines.join('\n') }
   end
   
   def self.restart_yaim!
