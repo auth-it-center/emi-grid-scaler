@@ -1,7 +1,7 @@
 require 'net/ssh'
 
 class CreamHandler
-  
+  @@local = true
   @@debug = false
   
   @@etc_hosts_file_path = '/etc/hosts'
@@ -12,11 +12,19 @@ class CreamHandler
     @@debug = debug
   end
   
+  def self.local=(local)
+    @@local = local
+  end
+  
+  def self.local
+    @@local
+  end
+  
   def self.queue_stats
     stats = {}
     showq_cmd = ""
     
-    if local
+    if @@local
       showq_cmd = %x[showq]
     else
       # Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
