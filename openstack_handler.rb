@@ -23,7 +23,7 @@ class OpenstackHandler
     
     if @@allservers == []
       retryable(:tries => 5, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-        servers = os.servers
+        servers = @@os.servers
       end
       
       ids = []
@@ -36,7 +36,7 @@ class OpenstackHandler
 
       ids.each do |id|
         retryable(:tries => 5, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-          vm = os.get_server(id)
+          vm = @@os.get_server(id)
           @@allservers << {:vm_ref => vm, :address => vm.addresses.first.address, :fqdn => vm.name + ".grid.auth.gr", :name => vm.name}
         end
       end
