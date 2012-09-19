@@ -1,13 +1,13 @@
 class Config
   
   # attr_accessor :debug, :debug_openstack
-  # attr_accessor :local
+  # attr_accessor :cream_local
   # 
   # attr_accessor :flavor_id, :image_id
   
   @@debug = false
   @@debug_openstack = false
-  @@local = true
+  @@cream_local = true
   
   @@flavor_id = 3
   @@image_id = 50
@@ -28,12 +28,12 @@ class Config
     @@debug_openstack
   end
   
-  def self.local=(local)
-    @@local = local
+  def self.cream_local=(cream_local)
+    @@cream_local = cream_local
   end
   
-  def self.local
-    @@local
+  def self.cream_local
+    @@cream_local
   end
 
   def self.flavor_id=(flavor_id)

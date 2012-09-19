@@ -7,6 +7,10 @@ class OpenstackHandler
   
   @@os = nil
   @@allservers = []
+  
+  def self.counter
+    return @@counter
+  end
     
   def self.init_client
     retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
@@ -37,50 +41,56 @@ class OpenstackHandler
       p "InstanceLimitExceeded: Instance quota exceeded. You cannot run any more instances of this type."
     end
     
-    
-    p "Printing new servers:" if Config.debug
-    p newservers if Config.debug
-    p newservers.collect {|n_s| n_s.name} if Config.debug
-    
+    if Config.debug
+      p "Printing new servers:"
+      p newservers
+      p newservers.collect {|n_s| n_s.name}
+    end
+        
     # Check if all servers are online and get IP addresses + name + fqdn in an array.
-    # e.g. [[10.0.0.1, vm-00, vm-00.grid.auth.gr], [10.0.0.2, vm-01, vm-01.grid.auth.gr], ...]
+    # e.g. [[10.0.0.1, vm-00.grid.auth.gr, vm-00], [10.0.0.2, vm-01.grid.auth.gr, vm-01] ...]
     ip_name_fqdn_array = vms_ips(newservers)
 
-    p "ip_name_fqdn_array is :" if Config.debug
-    p ip_name_fqdn_array if Config.debug
+    if Config.debug
+      p "ip_name_fqdn_array is :"
+      p ip_name_fqdn_array
+    end
     
     # Check if yaim is finished to all vms.
-    ip_addresses = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn.first}
-    VMHandler.yaim_terminated_in_each_host?(ip_addresses)
+    ip_list, fqdn_list = ip_name_fqdn_array.collect {|ip_name_fqdn| [ip_name_fqdn.first, ip_name_fqdn[1]]}
+    VMHandler.yaim_terminated_in_each_host?(ip_list)
     
     # Add new vms to cream files.
     CreamHandler.write_to_hosts(ip_name_fqdn_array)
-    fqdns = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn[1]}
     CreamHandler.add_wns_to_wn_list(fqdns)
     
     # Restart cream services.
-    CreamHandler.restart_yaim!
-    
-    # Save new servers.
-    @@allservers += newservers
+    CreamHandler.restart_yaim!    
   end
   
   def self.delete_vms(n)
     # Delete n servers.
+    deleted_servers = []
+    
     n.times do |counter|
-      
+      retryable(:tries => 3, :sleep => 2, :on => OpenStack::Exception::Other) do
+        @@allservers.first[:vm].refresh
+        
+        # We do the shift after delete!, just in case delete! method fails due to network.
+        if @@allservers.first[:vm].status == "ACTIVE"
+          @@allservers.first[:vm].delete!
+          deleted_servers << @@allservers.shift
+        end
+      end
     end
-    
-    @@allservers.each do |server|
-    end
-    
+        
     # Delete vms from cream files.
+    ip_list, fqdn_list = deleted_servers.collect {|d_s| [d_s[:address], d_s[:fqdn]] }
+    CreamHandler.delete_from_hosts(ip_list)
+    CreamHandler.delete_wns_from_wn_list(fqdn_list)
     
     # Restart cream services.
-  end
-  
-  def self.counter
-    return @@counter
+    CreamHandler.restart_yaim!
   end
   
   ################## Private members ################## 
@@ -124,6 +134,8 @@ class OpenstackHandler
     # Get all ip addresses.
     vms.each do |vm|
       ip_addresses << [vm.addresses.first.address, vm.name + ".grid.auth.gr", vm.name]
+      # Save new servers.
+      @@allservers << {:vm_ref => vm, :address => vm.addresses.first.address, :fqdn => vm.name + ".grid.auth.gr", :name => vm.name}
     end
     
     return ip_addresses

@@ -10,7 +10,7 @@ class CreamHandler
     stats = {}
     showq_cmd = ""
     
-    if Config.local
+    if Config.cream_local
       showq_cmd = %x[showq]
     else
       Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
@@ -68,11 +68,11 @@ class CreamHandler
     File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines}
   end
   
-  def self.add_wns_to_wn_list(list)
+  def self.add_wns_to_wn_list(fqdn_list)
     
     wn_list_conf_file = File.open(@@wn_list_conf_path, 'a')
 
-    list.each do |fqdn|
+    fqdn_list.each do |fqdn|
       wn_list_conf_file.write "#{fqdn}\n"
     end
     
@@ -84,7 +84,6 @@ class CreamHandler
   
   def self.delete_wns_from_wn_list(fqdn_list)
     wn_list_conf_lines = File.readlines(@@wn_list_conf_path)
-    wn_list_conf_lines = File.readlines('/opt/glite/yaim/etc/siteinfo/wn-list.conf')
     
     wn_list_conf_lines.reject! {|line| fqdn_list.include? line.strip! }
     
@@ -94,7 +93,7 @@ class CreamHandler
   def self.restart_yaim!
     p "Restarting YAIM!" if Config.debug
     
-    if Config.local
+    if Config.cream_local
       %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
     else
       yaim_cmd = ""

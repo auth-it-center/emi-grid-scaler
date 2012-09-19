@@ -5,18 +5,20 @@ require 'cream_handler'
 require 'openstack_handler'
 require 'vm_handler'
 
-INCREASE_VM_CONSTANT = 3
+VM_CONSTANT = 3
 
 p "Welcome to Openstack Scaler."
 
 # Config options
 Config.debug = true
 Config.debug_openstack = false
-Config.local = true
+Config.cream_local = true
 
 p "Initialazing openstack client."
 
 OpenstackHandler.init_client
+
+state = 0
 
 while true
   
@@ -25,12 +27,16 @@ while true
   p stats
   p "===================================="
 
-  if true #stats[:idle_jobs] > stats[:total_processors]
+  if state == 0 #stats[:idle_jobs] > stats[:total_processors]
     # Increase VMs.
     p "We need to scale!"
-    OpenstackHandler.create_vms(INCREASE_VM_CONSTANT)
-  else
+    OpenstackHandler.create_vms(VM_CONSTANT)
+    state+=1
+  elsif state == 1
     # Decrease VMs.
+    p "We need to decrease our infrastructure!"
+    OpenstackHandler.delete_vms(VM_CONSTANT)
+    state+=1
   end
   
   p "Lets wait for 1 min."
