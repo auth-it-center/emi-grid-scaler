@@ -56,8 +56,12 @@ class OpenstackHandler
       p ip_name_fqdn_array
     end
     
-    # Check if yaim is finished to all vms.
     ip_list, fqdn_list = ip_name_fqdn_array.collect {|ip_name_fqdn| [ip_name_fqdn.first, ip_name_fqdn[1]]}
+    # Give some time to VMs to get up.
+    p "Give some time to VMs to get up." if ScalerConfig.debug
+    sleep(5)
+    
+    # Check if yaim is finished to all vms.
     VMHandler.yaim_terminated_in_each_host?(ip_list)
     
     # Add new vms to cream files.
