@@ -15,7 +15,7 @@ class VMHandler
       host_finished = 0
       
       ip_addresses.each do |ip_address|
-        retryable(:tries => 3, :sleep => 5, :on => Errno::ECONNREFUSED) do
+        retryable(:tries => 3, :sleep => 5, :on => [Errno::ECONNREFUSED, Errno::EHOSTUNREACH]) do
           host_finished += yaim_terminated?(ip_address)
         end
       end
