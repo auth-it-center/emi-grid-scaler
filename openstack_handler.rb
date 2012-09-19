@@ -22,6 +22,8 @@ class OpenstackHandler
     end
     
     if @@allservers == []
+      servers = []
+      
       retryable(:tries => 5, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
         servers = @@os.servers
       end
