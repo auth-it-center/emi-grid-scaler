@@ -18,7 +18,7 @@ class OpenstackHandler
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
-                                        :is_debug => Config.debug_openstack}) 
+                                        :is_debug => ScalerConfig.debug_openstack}) 
     end
   end
   
@@ -29,10 +29,10 @@ class OpenstackHandler
     begin
       n.times do |counter|
         retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => Config.image_id, :flavorRef => Config.flavor_id, :security_groups => ['default', 'Torque-WN'], :key_name=>"test_key_set")
+          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => ScalerConfig.image_id, :flavorRef => ScalerConfig.flavor_id, :security_groups => ['default', 'Torque-WN'], :key_name=>"test_key_set")
         end
 
-        p "Counter = " + @@counter.to_s if Config.debug
+        p "Counter = " + @@counter.to_s if ScalerConfig.debug
 
         @@counter+=1
         sleep(1)
@@ -41,7 +41,7 @@ class OpenstackHandler
       p "InstanceLimitExceeded: Instance quota exceeded. You cannot run any more instances of this type."
     end
     
-    if Config.debug
+    if ScalerConfig.debug
       p "Printing new servers:"
       p newservers
       p newservers.collect {|n_s| n_s.name}
@@ -51,7 +51,7 @@ class OpenstackHandler
     # e.g. [[10.0.0.1, vm-00.grid.auth.gr, vm-00], [10.0.0.2, vm-01.grid.auth.gr, vm-01] ...]
     ip_name_fqdn_array = vms_ips(newservers)
 
-    if Config.debug
+    if ScalerConfig.debug
       p "ip_name_fqdn_array is :"
       p ip_name_fqdn_array
     end
@@ -102,7 +102,7 @@ class OpenstackHandler
     
     while flag
       # Server refreshing
-      p "Server refreshing" if Config.debug
+      p "Server refreshing" if ScalerConfig.debug
       vms.each do |server| 
         retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
           server.refresh
@@ -117,7 +117,7 @@ class OpenstackHandler
         end
       end
       
-      if Config.debug
+      if ScalerConfig.debug
         p "Number of active vms:"
         p i
         p "Number of vms:"

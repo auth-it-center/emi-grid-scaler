@@ -1,4 +1,4 @@
-class Config
+class ScalerConfig
   
   # attr_accessor :debug, :debug_openstack
   # attr_accessor :cream_local

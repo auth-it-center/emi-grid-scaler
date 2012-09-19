@@ -10,7 +10,7 @@ class CreamHandler
     stats = {}
     showq_cmd = ""
     
-    if Config.cream_local
+    if ScalerConfig.cream_local
       showq_cmd = %x[showq]
     else
       Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
@@ -24,7 +24,7 @@ class CreamHandler
 
     stats[:working_nodes], stats[:total_nodes] = showq_cmd.match(/(\d+) of   (\d+) Nodes Active/).captures
     
-    if Config.debug
+    if ScalerConfig.debug
       p "======================================================"
       p "======================================================"
       p "               Information from cream.                "
@@ -53,8 +53,10 @@ class CreamHandler
       etc_hosts_file.write "#{ip_name_fqdn.join(' ')}\n"
     end
     
-    p "Printing /etc/hosts new file" if Config.debug
-    p File.readlines(@@etc_hosts_file_path) if Config.debug
+    if ScalerConfig.debug
+      p "Printing /etc/hosts new file" 
+      p File.readlines(@@etc_hosts_file_path)
+    end
     
     etc_hosts_file.close
   end
@@ -76,8 +78,10 @@ class CreamHandler
       wn_list_conf_file.write "#{fqdn}\n"
     end
     
-    p "Printing wn-list.conf new file" if Config.debug
-    p File.readlines(@@wn_list_conf_path) if Config.debug
+    if ScalerConfig.debug
+      p "Printing wn-list.conf new file" 
+      p File.readlines(@@wn_list_conf_path)
+    end
     
     wn_list_conf_file.close
   end
@@ -91,9 +95,9 @@ class CreamHandler
   end
   
   def self.restart_yaim!
-    p "Restarting YAIM!" if Config.debug
+    p "Restarting YAIM!" if ScalerConfig.debug
     
-    if Config.cream_local
+    if ScalerConfig.cream_local
       %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
     else
       yaim_cmd = ""
@@ -102,8 +106,10 @@ class CreamHandler
         yaim_cmd = session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site')
       end
       
-      p "YAIM command:" if Config.debug
-      p yaim_cmd if Config.debug
+      if ScalerConfig.debug
+        p "YAIM command:" 
+        p yaim_cmd
+      end
     end
     
     $?.exitstatus
