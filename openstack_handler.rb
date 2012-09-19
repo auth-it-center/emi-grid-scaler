@@ -56,7 +56,8 @@ class OpenstackHandler
       p ip_name_fqdn_array
     end
     
-    ip_list, fqdn_list = ip_name_fqdn_array.collect {|ip_name_fqdn| [ip_name_fqdn.first, ip_name_fqdn[1]]}
+    ip_list = [], fqdn_list = []
+    ip_name_fqdn_array.collect {|ip_name_fqdn| ip_list << ip_name_fqdn.first; fqdn_list << ip_name_fqdn[1]]}
     # Give some time to VMs to get up.
     p "Give some time to VMs to get up." if ScalerConfig.debug
     sleep(10)
@@ -89,7 +90,8 @@ class OpenstackHandler
     end
         
     # Delete vms from cream files.
-    ip_list, fqdn_list = deleted_servers.collect {|d_s| [d_s[:address], d_s[:fqdn]] }
+    ip_list = [], fqdn_list = []
+    deleted_servers.each {|d_s| ip_list << [d_s[:address]; fqdn_list << d_s[:fqdn]] }
     CreamHandler.delete_from_hosts(ip_list)
     CreamHandler.delete_wns_from_wn_list(fqdn_list)
     
