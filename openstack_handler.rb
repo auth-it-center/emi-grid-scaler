@@ -91,7 +91,7 @@ class OpenstackHandler
         
     # Delete vms from cream files.
     ip_list = [], fqdn_list = []
-    deleted_servers.each {|d_s| ip_list << [d_s[:address]; fqdn_list << d_s[:fqdn]] }
+    deleted_servers.each {|d_s| ip_list << d_s[:address]; fqdn_list << d_s[:fqdn] }
     CreamHandler.delete_from_hosts(ip_list)
     CreamHandler.delete_wns_from_wn_list(fqdn_list)
     
