@@ -1,31 +1,16 @@
 require 'rubygems'
 require 'net/ssh'
 
-class CreamHandler
-  @@local = true
-  @@debug = false
-  
+class CreamHandler  
   @@etc_hosts_file_path = '/etc/hosts'
   
   @@wn_list_conf_path = '/opt/glite/yaim/etc/siteinfo/wn-list.conf'
-  
-  def self.debug=(debug)
-    @@debug = debug
-  end
-  
-  def self.local=(local)
-    @@local = local
-  end
-  
-  def self.local
-    @@local
-  end
-  
+    
   def self.queue_stats
     stats = {}
     showq_cmd = ""
     
-    if @@local
+    if Config.local
       showq_cmd = %x[showq]
     else
       Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
@@ -39,7 +24,7 @@ class CreamHandler
 
     stats[:working_nodes], stats[:total_nodes] = showq_cmd.match(/(\d+) of   (\d+) Nodes Active/).captures
     
-    if @@debug
+    if Config.debug
       p "======================================================"
       p "======================================================"
       p "               Information from cream.                "
@@ -68,19 +53,19 @@ class CreamHandler
       etc_hosts_file.write "#{ip_name_fqdn.join(' ')}\n"
     end
     
-    p "Printing /etc/hosts new file" if @@debug
-    p File.readlines(@@etc_hosts_file_path) if @@debug
+    p "Printing /etc/hosts new file" if Config.debug
+    p File.readlines(@@etc_hosts_file_path) if Config.debug
     
     etc_hosts_file.close
   end
   
-  def self.delete_from_hosts(list)
+  def self.delete_from_hosts(ip_list)
         
     etc_hosts_lines = File.readlines(@@etc_hosts_file_path)
     
-    etc_hosts_lines.reject! {|line| list.include?(line.split.first) }
+    etc_hosts_lines.reject! {|line| ip_list.include? line.split.first }
     
-    File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines.join("\n") }
+    File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines}
   end
   
   def self.add_wns_to_wn_list(list)
@@ -91,24 +76,25 @@ class CreamHandler
       wn_list_conf_file.write "#{fqdn}\n"
     end
     
-    p "Printing wn-list.conf new file" if @@debug
-    p File.readlines(@@wn_list_conf_path) if @@debug
+    p "Printing wn-list.conf new file" if Config.debug
+    p File.readlines(@@wn_list_conf_path) if Config.debug
     
     wn_list_conf_file.close
   end
   
-  def self.delete_wns_from_wn_list(list)
+  def self.delete_wns_from_wn_list(fqdn_list)
     wn_list_conf_lines = File.readlines(@@wn_list_conf_path)
+    wn_list_conf_lines = File.readlines('/opt/glite/yaim/etc/siteinfo/wn-list.conf')
     
-    wn_list_conf_lines.reject! {|line| list.include? line.strip! }
+    wn_list_conf_lines.reject! {|line| fqdn_list.include? line.strip! }
     
     File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines.join("\n") }
   end
   
   def self.restart_yaim!
-    p "Restarting YAIM!" if @@debug
+    p "Restarting YAIM!" if Config.debug
     
-    if @@local
+    if Config.local
       %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
     else
       yaim_cmd = ""
@@ -117,8 +103,8 @@ class CreamHandler
         yaim_cmd = session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site')
       end
       
-      p "YAIM command:" if @@debug
-      p yaim_cmd if @@debug
+      p "YAIM command:" if Config.debug
+      p yaim_cmd if Config.debug
     end
     
     $?.exitstatus

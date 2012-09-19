@@ -2,33 +2,19 @@ require 'rubygems'
 require 'openstack'
 require 'retryable'
 
-class OpenstackHandler
-  @@debug = false
-  @@debug_openstack = false
-  
+class OpenstackHandler  
   @@counter = 0
   
-  @@flavor_id = 2
-  @@image_id = 50
-
   @@os = nil
   @@allservers = []
-  
-  def self.debug=(debug)
-    @@debug = debug
-  end
-  
-  def self.debug_openstack=(debug)
-    @@debug_openstack = debug
-  end
-  
+    
   def self.init_client
     retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
       @@os = OpenStack::Connection.create({:username => "cream", 
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
-                                        :is_debug => @@debug_openstack}) 
+                                        :is_debug => Config.debug_openstack}) 
     end
   end
   
@@ -39,10 +25,10 @@ class OpenstackHandler
     begin
       n.times do |counter|
         retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
-          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => @@image_id, :flavorRef => @@flavor_id, :security_groups => ['default', 'Torque-WN'], :key_name=>"test_key_set")
+          newservers << @@os.create_server(:name => "vm-wn-#{@@counter}", :imageRef => Config.image_id, :flavorRef => Config.flavor_id, :security_groups => ['default', 'Torque-WN'], :key_name=>"test_key_set")
         end
 
-        p "Counter = " + @@counter.to_s if @@debug
+        p "Counter = " + @@counter.to_s if Config.debug
 
         @@counter+=1
         sleep(1)
@@ -52,16 +38,16 @@ class OpenstackHandler
     end
     
     
-    p "Printing new servers:" if @@debug
-    p newservers if @@debug
-    p newservers.collect {|n_s| n_s.name} if @@debug
+    p "Printing new servers:" if Config.debug
+    p newservers if Config.debug
+    p newservers.collect {|n_s| n_s.name} if Config.debug
     
     # Check if all servers are online and get IP addresses + name + fqdn in an array.
     # e.g. [[10.0.0.1, vm-00, vm-00.grid.auth.gr], [10.0.0.2, vm-01, vm-01.grid.auth.gr], ...]
     ip_name_fqdn_array = vms_ips(newservers)
 
-    p "ip_name_fqdn_array is :" if @@debug
-    p ip_name_fqdn_array if @@debug
+    p "ip_name_fqdn_array is :" if Config.debug
+    p ip_name_fqdn_array if Config.debug
     
     # Check if yaim is finished to all vms.
     ip_addresses = ip_name_fqdn_array.collect {|ip_name_fqdn| ip_name_fqdn.first}
@@ -74,10 +60,19 @@ class OpenstackHandler
     
     # Restart cream services.
     CreamHandler.restart_yaim!
+    
+    # Save new servers.
+    @@allservers += newservers
   end
   
   def self.delete_vms(n)
     # Delete n servers.
+    n.times do |counter|
+      
+    end
+    
+    @@allservers.each do |server|
+    end
     
     # Delete vms from cream files.
     
@@ -97,7 +92,7 @@ class OpenstackHandler
     
     while flag
       # Server refreshing
-      p "Server refreshing" if @@debug
+      p "Server refreshing" if Config.debug
       vms.each do |server| 
         retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
           server.refresh
@@ -112,7 +107,7 @@ class OpenstackHandler
         end
       end
       
-      if @@debug
+      if Config.debug
         p "Number of active vms:"
         p i
         p "Number of vms:"

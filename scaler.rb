@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'rubygems'
+require 'config'
 require 'cream_handler'
 require 'openstack_handler'
 require 'vm_handler'
@@ -8,12 +9,10 @@ INCREASE_VM_CONSTANT = 3
 
 p "Welcome to Openstack Scaler."
 
-# Debug options
-OpenstackHandler.debug = true
-OpenstackHandler.debug_openstack = false
-CreamHandler.debug = true
-VMHandler.debug = true
-CreamHandler.local = false
+# Config options
+Config.debug = true
+Config.debug_openstack = false
+Config.local = true
 
 p "Initialazing openstack client."
 
