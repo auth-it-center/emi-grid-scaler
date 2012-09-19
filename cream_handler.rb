@@ -82,13 +82,13 @@ class CreamHandler
     fqdn_list.each do |fqdn|
       wn_list_conf_file.write "#{fqdn}\n"
     end
+        
+    wn_list_conf_file.close
     
     if ScalerConfig.debug
       p "Printing wn-list.conf new file" 
       p File.readlines(@@wn_list_conf_path)
     end
-    
-    wn_list_conf_file.close
   end
   
   def self.delete_wns_from_wn_list(fqdn_list)
@@ -97,6 +97,11 @@ class CreamHandler
     wn_list_conf_lines.reject! {|line| fqdn_list.include? line.strip! }
     
     File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines.join("\n") }
+    
+    if ScalerConfig.debug
+      p "Printing wn-list.conf new file" 
+      p File.readlines(@@wn_list_conf_path)
+    end
   end
   
   def self.restart_yaim!
