@@ -112,11 +112,11 @@ class OpenstackHandler
     
     n.times do |counter|
       retryable(:tries => 3, :sleep => 2, :on => OpenStack::Exception::Other) do
-        @@allservers.first[:vm].refresh
+        @@allservers.first[:vm_ref].refresh
         
         # We do the shift after delete!, just in case delete! method fails due to network.
-        if @@allservers.first[:vm].status == "ACTIVE"
-          @@allservers.first[:vm].delete!
+        if @@allservers.first[:vm_ref].status == "ACTIVE"
+          @@allservers.first[:vm_ref].delete!
           deleted_servers << @@allservers.shift
         end
       end
