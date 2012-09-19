@@ -52,13 +52,13 @@ class CreamHandler
     list.each do |ip_name_fqdn|
       etc_hosts_file.write "#{ip_name_fqdn.join(' ')}\n"
     end
+        
+    etc_hosts_file.close
     
     if ScalerConfig.debug
-      p "Printing /etc/hosts new file" 
+      p "Printing /etc/hosts new file"
       p File.readlines(@@etc_hosts_file_path)
     end
-    
-    etc_hosts_file.close
   end
   
   def self.delete_from_hosts(ip_list)
@@ -68,6 +68,11 @@ class CreamHandler
     etc_hosts_lines.reject! {|line| ip_list.include? line.split.first }
     
     File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines}
+    
+    if ScalerConfig.debug
+      p "Printing /etc/hosts new file"
+      p File.readlines(@@etc_hosts_file_path)
+    end
   end
   
   def self.add_wns_to_wn_list(fqdn_list)
@@ -98,18 +103,14 @@ class CreamHandler
     p "Restarting YAIM!" if ScalerConfig.debug
     
     if ScalerConfig.cream_local
-      %x[/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site]
+      yaim_cmd = '/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site'
+      IO.popen(yaim_cmd, mode='r') {|cmd_stream| puts cmd_stream.read}
     else
-      yaim_cmd = ""
-
       Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
-        yaim_cmd = session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site')
-      end
-      
-      if ScalerConfig.debug
-        p "YAIM command:" 
-        p yaim_cmd
-      end
+        session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site') do |ch, stream, line|
+          puts line if ScalerConfig.debug
+        end
+      end      
     end
     
     $?.exitstatus
