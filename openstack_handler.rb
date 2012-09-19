@@ -107,6 +107,10 @@ class OpenstackHandler
   end
   
   def self.delete_vms(n)
+    return if n > @@allservers.count
+    
+    p "We need to decrease our infrastructure!"
+    
     # Delete n servers.
     deleted_servers = []
     
