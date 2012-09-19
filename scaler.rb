@@ -18,10 +18,11 @@ p "Initialazing openstack client."
 
 OpenstackHandler.init_client
 
-state = 0
+state = 1
 
 while true
-  
+  p "state:"
+  p state
   p "Lets get the stats!"
   stats = CreamHandler.queue_stats
   p stats

@@ -13,12 +13,38 @@ class OpenstackHandler
   end
     
   def self.init_client
-    retryable(:tries => 3, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
+    retryable(:tries => 5, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
       @@os = OpenStack::Connection.create({:username => "cream", 
                                         :api_key=>"cream", 
                                         :auth_url => "http://192.168.124.81:5000/v1.1/", 
                                         :authtenant_name =>"scc-61",
                                         :is_debug => ScalerConfig.debug_openstack}) 
+    end
+    
+    if @@allservers == []
+      retryable(:tries => 5, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
+        servers = os.servers
+      end
+      
+      ids = []
+      
+      servers.each do |server|
+        if server[:name] ~= /^vm-wn-.*/
+          ids << server[:id]
+        end
+      end
+
+      ids.each do |id|
+        retryable(:tries => 5, :sleep => 2, :on => [OpenStack::Exception::Other, OpenStack::Exception::BadRequest]) do
+          vm = os.get_server(id)
+          @@allservers << {:vm_ref => vm, :address => vm.addresses.first.address, :fqdn => vm.name + ".grid.auth.gr", :name => vm.name}
+        end
+      end
+    end
+    
+    if ScalerConfig.debug
+      p "Current servers from init:"
+      p @@allservers
     end
   end
   
@@ -70,7 +96,12 @@ class OpenstackHandler
     CreamHandler.add_wns_to_wn_list(fqdn_list)
     
     # Restart cream services.
-    CreamHandler.restart_yaim!    
+    CreamHandler.restart_yaim!
+    
+    if ScalerConfig.debug
+      p "Current servers:"
+      p @@allservers
+    end
   end
   
   def self.delete_vms(n)

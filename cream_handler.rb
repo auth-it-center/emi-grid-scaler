@@ -104,7 +104,11 @@ class CreamHandler
     
     if ScalerConfig.cream_local
       yaim_cmd = '/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site'
-      IO.popen(yaim_cmd, mode='r') {|cmd_stream| puts cmd_stream.read}
+      IO.popen(yaim_cmd, mode='r') do |cmd_stream| 
+        until cmd_stream.eof?
+          puts cmd_stream.gets
+        end
+      end
     else
       Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
         session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site') do |ch, stream, line|
