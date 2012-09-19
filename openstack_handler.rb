@@ -29,7 +29,7 @@ class OpenstackHandler
       ids = []
       
       servers.each do |server|
-        if server[:name] ~= /^vm-wn-.*/
+        if server[:name] =~ /^vm-wn-.*/
           ids << server[:id]
         end
       end
