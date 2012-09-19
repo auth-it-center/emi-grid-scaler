@@ -57,7 +57,7 @@ class OpenstackHandler
     end
     
     ip_list = [], fqdn_list = []
-    ip_name_fqdn_array.collect {|ip_name_fqdn| ip_list << ip_name_fqdn.first; fqdn_list << ip_name_fqdn[1]]}
+    ip_name_fqdn_array.collect {|ip_name_fqdn| ip_list << ip_name_fqdn.first; fqdn_list << ip_name_fqdn[1]}
     # Give some time to VMs to get up.
     p "Give some time to VMs to get up." if ScalerConfig.debug
     sleep(10)
