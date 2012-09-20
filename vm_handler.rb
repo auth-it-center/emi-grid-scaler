@@ -34,6 +34,7 @@ class VMHandler
     
     Net::SSH.start( ip_address, 'root', :paranoid => false ) do |session|
       last_line = session.exec!('tail -n1 /opt/glite/yaim/log/yaimlog')
+      if last_line == nil then last_line = "" end
     end
     
     if ScalerConfig.debug
