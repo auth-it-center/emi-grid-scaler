@@ -67,6 +67,8 @@ class CreamHandler
     
     etc_hosts_lines.reject! {|line| ip_list.include? line.split.first }
     
+    check_file_lines(etc_hosts_lines)
+    
     File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines}
     
     if ScalerConfig.debug
@@ -77,13 +79,22 @@ class CreamHandler
   
   def self.add_wns_to_wn_list(fqdn_list)
     
-    wn_list_conf_file = File.open(@@wn_list_conf_path, 'a')
+    # wn_list_conf_file = File.open(@@wn_list_conf_path, 'a')
+    wn_list_conf_lines = File.readlines(@@wn_list_conf_path)
 
     fqdn_list.each do |fqdn|
-      wn_list_conf_file.write "#{fqdn}\n"
+      wn_list_conf_lines << "#{fqdn}\n"
     end
-        
-    wn_list_conf_file.close
+    
+    # Check if all lines have a \n at the end.
+    check_file_lines(wn_list_conf_lines)
+    
+    # Add one empty line at the end.
+    # wn_list_conf_file.write "\n"
+    
+    # Write file.
+    # wn_list_conf_file.close
+    File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines}
     
     if ScalerConfig.debug
       p "Printing wn-list.conf new file" 
@@ -96,7 +107,13 @@ class CreamHandler
     
     wn_list_conf_lines.reject! {|line| fqdn_list.include? line.strip! }
     
+    # Check if all lines have a \n at the end.
+    check_file_lines(wn_list_conf_lines)
+    
     File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines.join("\n") }
+    
+    # Add one empty line at the end.
+    # File.open(@@wn_list_conf_path, 'a') {|f| f.write "\n" }
     
     if ScalerConfig.debug
       p "Printing wn-list.conf new file" 
@@ -108,20 +125,27 @@ class CreamHandler
     p "Restarting YAIM!" if ScalerConfig.debug
     
     if ScalerConfig.cream_local
-      yaim_cmd = '/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site'
-      IO.popen(yaim_cmd, mode='r') do |cmd_stream| 
+      #yaim_cmd = '/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site'
+      yaim_cmd = '/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh'      IO.popen(yaim_cmd, mode='r') do |cmd_stream| 
         until cmd_stream.eof?
           puts cmd_stream.gets
         end
       end
     else
       Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
-        session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site') do |ch, stream, line|
-          puts line if ScalerConfig.debug
+        #session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site') do |ch, stream, line|
+        session.exec!('/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh') do |ch, stream, line|          puts line if ScalerConfig.debug
         end
       end      
     end
     
     $?.exitstatus
   end  
+  
+  ################## Private members ################## 
+  private
+  
+  def self.check_file_lines(file_lines)
+    file_lines.map! {|l| unless l =~ /.*\n$/ then l += "\n" else l end }
+  end
 end
