@@ -18,11 +18,11 @@ class CreamHandler
       end
     end
 
-    stats[:total_jobs], stats[:active_jobs], stats[:idle_jobs], stats[:blocked_jobs] = showq_cmd.match(/^Total Jobs: (\d+)   Active Jobs: (\d+)   Idle Jobs: (\d+)   Blocked Jobs: (\d+)$/).captures
+    stats[:total_jobs], stats[:active_jobs], stats[:idle_jobs], stats[:blocked_jobs] = showq_cmd.match(/^Total Jobs: (\d+)   Active Jobs: (\d+)   Idle Jobs: (\d+)   Blocked Jobs: (\d+)$/).captures.collect {|d| d.to_i}
 
-    stats[:working_processors], stats[:total_processors] = showq_cmd.match(/(\d+) of   (\d+) Processors Active/).captures
+    stats[:working_processors], stats[:total_processors] = showq_cmd.match(/(\d+) of   (\d+) Processors Active/).captures.collect {|d| d.to_i}
 
-    stats[:working_nodes], stats[:total_nodes] = showq_cmd.match(/(\d+) of   (\d+) Nodes Active/).captures
+    stats[:working_nodes], stats[:total_nodes] = showq_cmd.match(/(\d+) of   (\d+) Nodes Active/).captures.collect {|d| d.to_i}
     
     if ScalerConfig.debug
       p "======================================================"
