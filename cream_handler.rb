@@ -126,7 +126,8 @@ class CreamHandler
     
     if ScalerConfig.cream_local
       #yaim_cmd = '/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site'
-      yaim_cmd = '/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh'      IO.popen(yaim_cmd, mode='r') do |cmd_stream| 
+      yaim_cmd = '/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh'
+      IO.popen(yaim_cmd, mode='r') do |cmd_stream| 
         until cmd_stream.eof?
           puts cmd_stream.gets
         end
