@@ -35,7 +35,7 @@ while true
     OpenstackHandler.create_vms(VM_CONSTANT)
     # state+=1
   # elsif state == 1
-  else
+  elsif stats[:active_jobs] < 40
     # Decrease VMs.
     OpenstackHandler.delete_vms(VM_CONSTANT)
     # state+=1
