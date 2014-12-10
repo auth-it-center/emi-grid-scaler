@@ -1,0 +1,18 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    json (1.8.1)
+    net-ssh (2.9.1)
+    openstack (1.1.2)
+      json
+    rake (10.1.0)
+    retryable (2.0.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  net-ssh
+  openstack (~> 1.1.2)
+  rake
+  retryable
