@@ -18,3 +18,10 @@ task :show_config do
   p "Flavor id: #{ScalerConfig.flavor_id}"
   p "Image id: #{ScalerConfig.image_id}"
 end
+
+begin
+  require 'rspec/core/rake_task'
+  RSpec::Core::RakeTask.new(:spec)
+rescue LoadError
+  # no rspec available
+end

@@ -1,30 +1,68 @@
+#!/usr/bin/env ruby
 require 'rubygems'
 require 'net/ssh'
+require_relative 'scaler_config'
 
-class CreamHandler  
+class CreamHandler
+
+  attr_reader :ip
+  # Configuration class variables and accessors
+  @@debug = true
+
+  def self.debug=(debug)
+    @@debug = debug
+  end
+
+  def self.debug
+    @@debug
+  end
+
+  def self.cream_local?(ip)
+    if ip == 'localhost'
+      return true
+    else
+      return false
+    end
+  end
+  ###################################
+
   @@etc_hosts_file_path = '/etc/hosts'
-  
   @@wn_list_conf_path = '/opt/glite/yaim/etc/siteinfo/wn-list.conf'
-    
-  def self.queue_stats
+
+  def initialize(ip='localhost', user=nil)
+    @ip = ip
+    @user = user
+    if !CreamHandler.cream_local?(@ip) && @user.nil?
+      raise(ArgumentError, 'must specify user when cream is not local')
+    end
+  end
+
+
+  def queue_stats
     stats = {}
     showq_cmd = ""
-    
-    if ScalerConfig.cream_local
-      showq_cmd = %x[showq]
-    else
-      Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
-        showq_cmd = session.exec!('showq')
+
+    begin
+      if CreamHandler.cream_local?(@ip)
+        showq_cmd = %x[showq]
+      else
+        Net::SSH.start( @ip, @user ) do |session|
+          showq_cmd = session.exec!('showq')
+        end
       end
+
+    rescue Exception
+      raise
     end
 
-    stats[:total_jobs], stats[:active_jobs], stats[:idle_jobs], stats[:blocked_jobs] = showq_cmd.match(/^Total Jobs: (\d+)   Active Jobs: (\d+)   Idle Jobs: (\d+)   Blocked Jobs: (\d+)$/).captures.collect {|d| d.to_i}
+    stats[:total_jobs], stats[:active_jobs], stats[:idle_jobs], stats[:blocked_jobs] = showq_cmd.match(/Total Jobs: (\d+)\s+Active Jobs: (\d+)\s+Idle Jobs: (\d+)\s+Blocked Jobs: (\d+)/).captures.collect {|d| d.to_i}
 
-    stats[:working_processors], stats[:total_processors] = showq_cmd.match(/(\d+) of   (\d+) Processors Active/).captures.collect {|d| d.to_i}
+    stats[:working_processors], stats[:total_processors] = showq_cmd.match(/(\d+) of\s+(\d+) Processors Active/).captures.collect {|d| d.to_i}
 
-    stats[:working_nodes], stats[:total_nodes] = showq_cmd.match(/(\d+) of   (\d+) Nodes Active/).captures.collect {|d| d.to_i}
+    # this is not present always
+    stats[:working_nodes], stats[:total_nodes] = showq_cmd.match(/(\d+) of\s+(\d+) Nodes Active/).captures.collect {|d| d.to_i}
     
-    if ScalerConfig.debug
+    if CreamHandler.debug
       p "======================================================"
       p "======================================================"
       p "               Information from cream.                "
@@ -45,108 +83,251 @@ class CreamHandler
     stats
   end
   
-  def self.write_to_hosts(list)
+  def write_to_hosts(list, hosts_file_path=@@etc_hosts_file_path, sudo_to_write=false)
 
-    etc_hosts_file = File.open(@@etc_hosts_file_path, 'a')
-
+    # TODO: Read the whole host file and delete duplicates before committing
+    # prepare string to append
+    string_to_append = ""
     list.each do |ip_name_fqdn|
-      etc_hosts_file.write "#{ip_name_fqdn.join(' ')}\n"
+      string_to_append << "#{ip_name_fqdn.join(' ')}\n"
     end
-        
-    etc_hosts_file.close
-    
-    if ScalerConfig.debug
-      p "Printing /etc/hosts new file"
-      p File.readlines(@@etc_hosts_file_path)
+
+    remote_etc_hosts_file = ''
+
+    if CreamHandler.cream_local? @ip
+      if sudo_to_write
+        %x[sudo echo -e #{string_to_append} >> #{hosts_file_path}]
+      else
+        etc_hosts_file = File.open(hosts_file_path, 'a')
+        etc_hosts_file.write(string_to_append)
+        etc_hosts_file.close
+      end
+    else
+      Net::SSH::start(@ip, @user) do |session|
+        if sudo_to_write
+          remote_etc_hosts_file = session.exec!("sudo echo -e #{string_to_append} >> #{hosts_file_path};sudo cat -e #{hosts_file_path}")
+        else
+          remote_etc_hosts_file = session.exec!("echo -e #{string_to_append} >> #{hosts_file_path};cat #{hosts_file_path}")
+        end
+      end
+    end
+
+    if CreamHandler.debug
+      if CreamHandler.cream_local? @ip
+        p "Printing /etc/hosts new file"
+        p File.readlines(hosts_file_path)
+      else
+        p remote_etc_hosts_file
+      end
     end
   end
-  
-  def self.delete_from_hosts(ip_list)
-        
-    etc_hosts_lines = File.readlines(@@etc_hosts_file_path)
-    
+
+  def delete_from_hosts(ip_list, hosts_file_path=@@etc_hosts_file_path, sudo_to_delete=false)
+
+    etc_hosts_lines = []
+    # return false unless File.exist?(hosts_file_path)
+    if CreamHandler.cream_local? @ip
+      etc_hosts_lines = File.readlines(hosts_file_path)
+    else
+      Net::SSH.start(@ip, @user) do |session|
+        etc_hosts_lines = session.exec!("cat #{hosts_file_path}").split("\n")
+      end
+    end
+
     etc_hosts_lines.reject! {|line| ip_list.include? line.split.first }
-    
-    check_file_lines(etc_hosts_lines)
-    
-    File.open(@@etc_hosts_file_path, 'w') {|f| f.write etc_hosts_lines}
-    
-    if ScalerConfig.debug
-      p "Printing /etc/hosts new file"
-      p File.readlines(@@etc_hosts_file_path)
+    string_to_be_written = etc_hosts_lines.join("\n")
+
+    CreamHandler.fix_file_lines(etc_hosts_lines)
+
+    remote_hosts_lines = ''
+    if CreamHandler.cream_local? @ip
+      File.open(hosts_file_path, 'w') {|f| f.write string_to_be_written}
+    else
+      Net::SSH.start(@ip, @user) do |session|
+        if sudo_to_delete
+          remote_hosts_lines = session.exec!("sudo -i; echo #{string_to_be_written} > #{hosts_file_path};cat #{hosts_file_path}")
+        else
+          remote_hosts_lines = session.exec!("echo #{string_to_be_written} > #{hosts_file_path};cat #{hosts_file_path}")
+        end
+      end
     end
+
+    if CreamHandler.debug
+      p "Printing #{hosts_file_path} new file"
+      if CreamHandler.cream_local? @ip
+        p File.readlines(hosts_file_path)
+      else
+        p remote_hosts_lines
+      end
+    end
+
+    etc_hosts_lines
   end
-  
-  def self.add_wns_to_wn_list(fqdn_list)
-    
+
+  def add_wns_to_wn_list(fqdn_list, wns_file_path=@@wn_list_conf_path, sudo_to_write=false)
+
     # wn_list_conf_file = File.open(@@wn_list_conf_path, 'a')
-    wn_list_conf_lines = File.readlines(@@wn_list_conf_path)
+    if CreamHandler.cream_local? @ip
+      wn_list_conf_lines = File.readlines(wns_file_path)
+    else
+      Net::SSH.start(@ip, @user) do |session|
+        if sudo_to_write
+          wn_list_conf_lines = session.exec!("sudo -i; cat #{wns_file_path}")
+        else
+          wn_list_conf_lines = session.exec!("cat #{wns_file_path}")
+        end
+      end
+      wn_list_conf_lines = wn_list_conf_lines.split("\n")
+      CreamHandler.fix_file_lines wn_list_conf_lines
+    end
+
+
+    # # Check if all lines have a \n at the end.
+    # CreamHandler.fix_file_lines(wn_list_conf_lines)
 
     fqdn_list.each do |fqdn|
       wn_list_conf_lines << "#{fqdn}\n"
     end
-    
-    # Check if all lines have a \n at the end.
-    check_file_lines(wn_list_conf_lines)
-    
+
+    # Remove duplicates, if any
+    wn_list_conf_lines.uniq!
+    # Sort lines
+    wn_list_conf_lines.sort!
+
+    string_to_be_written = ''
+    wn_list_conf_lines.each do |line|
+      string_to_be_written << "#{line}"
+    end
+
     # Add one empty line at the end.
     # wn_list_conf_file.write "\n"
-    
-    # Write file.
-    # wn_list_conf_file.close
-    File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines}
-    
-    if ScalerConfig.debug
-      p "Printing wn-list.conf new file" 
-      p File.readlines(@@wn_list_conf_path)
+
+    remote_wns_file = ''
+
+    if CreamHandler.cream_local? @ip
+      # Write file.
+      if sudo_to_write
+        %x[sudo echo -e #{string_to_be_written} > #{wns_file_path}]
+      else
+        File.open(wns_file_path, 'w') {|f| f.write string_to_be_written }
+      end
+    else
+      Net::SSH.start(@ip, @user) do |session|
+        if sudo_to_write
+          remote_wns_file = session.exec!("sudo -i; echo -e #{string_to_be_written} > #{wns_file_path};cat -e #{wns_file_path}")
+        else
+          remote_wns_file = session.exec!("echo -e #{string_to_be_written} > #{wns_file_path};cat #{wns_file_path}")
+        end
+      end
     end
+
+
+
+    if CreamHandler.debug
+      p "Printing wn-list.conf new file"
+      if CreamHandler.cream_local? @ip
+        p File.readlines(wns_file_path)
+      else
+        p remote_wns_file
+      end
+    end
+
   end
-  
-  def self.delete_wns_from_wn_list(fqdn_list)
-    wn_list_conf_lines = File.readlines(@@wn_list_conf_path)
-    
+
+  def delete_wns_from_wn_list(fqdn_list, wns_file_path=@@wn_list_conf_path, sudo_to_write=false)
+
+    if CreamHandler.cream_local? @ip
+      wn_list_conf_lines = File.readlines(wns_file_path)
+    else
+      Net::SSH.start(@ip, @user) do |session|
+        if sudo_to_write
+          wn_list_conf_lines = session.exec!("sudo cat #{wns_file_path}")
+        else
+          wn_list_conf_lines = session.exec!("cat #{wns_file_path}")
+        end
+        wn_list_conf_lines = wn_list_conf_lines.split("\n")
+        CreamHandler.fix_file_lines wn_list_conf_lines
+      end
+    end
+
+
     wn_list_conf_lines.reject! {|line| fqdn_list.include? line.strip! }
-    
-    # Check if all lines have a \n at the end.
-    check_file_lines(wn_list_conf_lines)
-    
-    File.open(@@wn_list_conf_path, 'w') {|f| f.write wn_list_conf_lines.join("\n") }
-    
-    # Add one empty line at the end.
-    # File.open(@@wn_list_conf_path, 'a') {|f| f.write "\n" }
-    
-    if ScalerConfig.debug
-      p "Printing wn-list.conf new file" 
-      p File.readlines(@@wn_list_conf_path)
+
+    string_to_be_written = ''
+    wn_list_conf_lines.each do |line|
+      string_to_be_written << "#{line}\n"
+    end
+
+    remote_wns_file = ''
+    if CreamHandler.cream_local? @ip
+      # Write file.
+      if sudo_to_write
+        %x[sudo echo -e #{string_to_be_written} > #{wns_file_path}]
+      else
+        File.open(wns_file_path, 'w') {|f| f.write string_to_be_written }
+      end
+    else
+      Net::SSH.start(@ip, @user) do |session|
+        if sudo_to_write
+          remote_wns_file = session.exec!("sudo -i; echo -e #{string_to_be_written} > #{wns_file_path};cat -e #{wns_file_path}")
+        else
+          remote_wns_file = session.exec!("echo -e #{string_to_be_written} > #{wns_file_path};cat #{wns_file_path}")
+        end
+      end
+    end
+
+    if CreamHandler.debug
+      p "Printing wn-list.conf new file"
+      if CreamHandler.cream_local? @ip
+        p File.readlines(wns_file_path)
+      else
+        p remote_wns_file
+      end
     end
   end
-  
-  def self.restart_yaim!
+#
+  def restart_yaim!(need_for_sudo=false)
     p "Restarting YAIM!" if ScalerConfig.debug
-    
-    if ScalerConfig.cream_local
+
+    if ScalerConfig.cream_local? @ip
       #yaim_cmd = '/opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site'
-      yaim_cmd = '/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh'
-      IO.popen(yaim_cmd, mode='r') do |cmd_stream| 
+      if need_for_sudo
+        yaim_cmd = 'sudo -i; /opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def'\
+                 '-n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh'
+      else
+        yaim_cmd = '/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def'\
+                 '-n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh'
+      end
+      IO.popen(yaim_cmd, mode='r') do |cmd_stream|
         until cmd_stream.eof?
           puts cmd_stream.gets
         end
       end
     else
-      Net::SSH.start( 'cream.afroditi.hellasgrid.gr', 'ansible' ) do |session|
+      Net::SSH.start( @ip, @user ) do |session|
         #session.exec!('sudo -i /opt/glite/yaim/bin/yaim -c -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site') do |ch, stream, line|
-        session.exec!('/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def -n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh') do |ch, stream, line|          puts line if ScalerConfig.debug
+        if need_for_sudo
+          session.exec!('/opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def'\
+           '-n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh') do |ch, stream, line|
+          puts line if ScalerConfig.debug
+          end
+
+        else
+          session.exec!('sudo -i; /opt/glite/yaim/bin/yaim -r -s /opt/glite/yaim/etc/siteinfo/site-info.def'\
+           '-n creamCE -n TORQUE_server -n TORQUE_utils -n BDII_site -f config_torque_server -f config_maui_cfg -f config_torque_submitter_ssh') do |ch, stream, line|
+            puts line if ScalerConfig.debug
+          end
         end
-      end      
+      end
     end
-    
+
     $?.exitstatus
-  end  
-  
-  ################## Private members ################## 
+  end
+#
+  ################## Private members ##################
   private
-  
-  def self.check_file_lines(file_lines)
+
+  def self.fix_file_lines(file_lines)
     file_lines.map! {|l| unless l =~ /.*\n$/ then l += "\n" else l end }
   end
 end
