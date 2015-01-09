@@ -150,7 +150,6 @@ cat #{mock_etc_hosts_file}")
       end
     end
     context 'remote hosts file' do
-      pending
       it 'should delete the specified hosts from the hosts file' do
         remote_cream_handler = CreamHandler.new('12.210.123.194', 'ansible')
         session = double(:session)
@@ -250,8 +249,5 @@ cat #{mock_etc_hosts_file}")
     end
   end
 
-  describe "#restart_yaim!" do
-    pending
-  end
 
 end
