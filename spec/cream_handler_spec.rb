@@ -51,7 +51,7 @@ describe CreamHandler do
           }
           true.should == res
         else
-          expect {cream_local.queue_status}.to raise_error(Errno::ENOENT::Exception)
+          expect {cream_local.queue_status}.to raise_error(Exception)
         end
       end
     end
@@ -193,7 +193,7 @@ cat #{mock_etc_hosts_file}")
     context 'remote file' do
       it "should write the wns to the wn list" do
         array_to_be_written = mock_fqdn_content.split("\n").concat(fqdns_to_be_added)
-        string_to_be_written = array_to_be_written.sort.join("\n")+"\n"
+        string_to_be_written = array_to_be_written.sort.uniq.join("\n")+"\n"
 
 
         remote_cream = CreamHandler.new('12.210.123.194', 'ansible')
